@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.mygdx.game.Screens.PlayScreen;
 
-public class Minerador extends Game {
+public class Mario extends Game {
 	public static final int V_WIDTH = 400;
 	public static final int V_HEIGHT = 208;
 

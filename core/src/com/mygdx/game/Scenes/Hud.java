@@ -8,9 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.mygdx.game.Minerador;
-
-import java.awt.*;
+import com.mygdx.game.Mario;
 
 public class Hud {
     public Stage stage;
@@ -31,7 +29,7 @@ public class Hud {
         timeCount = 0;
         score = 0;
 
-        viewport = new FitViewport(Minerador.V_WIDTH,Minerador.V_HEIGHT, new OrthographicCamera());
+        viewport = new FitViewport(Mario.V_WIDTH, Mario.V_HEIGHT, new OrthographicCamera());
         stage = new Stage(viewport, sb);
 
         Table table = new Table();
