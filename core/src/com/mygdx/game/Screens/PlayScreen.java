@@ -1,6 +1,7 @@
 package com.mygdx.game.Screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -16,6 +17,8 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.game.Mario;
 import com.mygdx.game.Scenes.Hud;
+import com.mygdx.game.Sprites.Personagem;
+import com.mygdx.game.Tools.B2WorldCreator;
 
 public class PlayScreen implements Screen {
     private Mario game;
@@ -27,83 +30,51 @@ public class PlayScreen implements Screen {
     private OrthogonalTiledMapRenderer renderer;
     private World world;
     private Box2DDebugRenderer b2dr;
+    private Personagem player;
 
     public PlayScreen(Mario game) {
         this.game = game;
         gameCam = new OrthographicCamera();
-        gamePort = new FitViewport(Mario.V_WIDTH, Mario.V_HEIGHT, gameCam);
+        gamePort = new FitViewport(Mario.V_WIDTH / Mario.PPM, Mario.V_HEIGHT / Mario.PPM, gameCam);
 
         hud = new Hud(game.batch);
 
         mapLoader = new TmxMapLoader();
         map = mapLoader.load("level1.tmx");
-        renderer = new OrthogonalTiledMapRenderer(map);
-        gameCam.position.set(gamePort.getWorldWidth()/2, gamePort.getWorldHeight()/2, 0);
+        renderer = new OrthogonalTiledMapRenderer(map, 1 / Mario.PPM);
+        gameCam.position.set(gamePort.getWorldWidth() / 2, gamePort.getWorldHeight() / 2, 0);
 
-        world = new World(new Vector2(0,0),true);
+        world = new World(new Vector2(0, -10), true);
+
         b2dr = new Box2DDebugRenderer();
+        new B2WorldCreator(world, map);
+        player = new Personagem(world);
 
-        BodyDef bdef = new BodyDef();
-        PolygonShape shape = new PolygonShape();
-        FixtureDef fdef = new FixtureDef();
-        Body body;
 
-        //cria o chao bodies/fixtures
-        for (MapObject object : map.getLayers().get(2).getObjects().getByType(RectangleMapObject.class)){
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
-        bdef.type = BodyDef.BodyType.StaticBody;
-        bdef.position.set(rect.getX()+rect.getWidth()/2, rect.getY()+rect.getHeight()/2);
-        body = world.createBody(bdef);
-        shape.setAsBox(rect.getWidth()/2,rect.getHeight()/2);
-        fdef.shape = shape;
-        body.createFixture(fdef);
-        }
-
-        //cria os canos
-        for (MapObject object : map.getLayers().get(3).getObjects().getByType(RectangleMapObject.class)){
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
-            bdef.type = BodyDef.BodyType.StaticBody;
-            bdef.position.set(rect.getX()+rect.getWidth()/2, rect.getY()+rect.getHeight()/2);
-            body = world.createBody(bdef);
-            shape.setAsBox(rect.getWidth()/2,rect.getHeight()/2);
-            fdef.shape = shape;
-            body.createFixture(fdef);
-        }
-
-        //cria as moedas bodies/fixtures
-        for (MapObject object : map.getLayers().get(4).getObjects().getByType(RectangleMapObject.class)){
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
-            bdef.type = BodyDef.BodyType.StaticBody;
-            bdef.position.set(rect.getX()+rect.getWidth()/2, rect.getY()+rect.getHeight()/2);
-            body = world.createBody(bdef);
-            shape.setAsBox(rect.getWidth()/2,rect.getHeight()/2);
-            fdef.shape = shape;
-            body.createFixture(fdef);
-        }
-
-        //cria os tijolos bodies/fixtures
-        for (MapObject object : map.getLayers().get(5).getObjects().getByType(RectangleMapObject.class)){
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
-            bdef.type = BodyDef.BodyType.StaticBody;
-            bdef.position.set(rect.getX()+rect.getWidth()/2, rect.getY()+rect.getHeight()/2);
-            body = world.createBody(bdef);
-            shape.setAsBox(rect.getWidth()/2,rect.getHeight()/2);
-            fdef.shape = shape;
-            body.createFixture(fdef);
-        }
     }
 
     @Override
     public void show() {
 
     }
-public void handleInput(float dt){
-     if(Gdx.input.isTouched()){
-         gameCam.position.x += 100 * dt;
-     }
-}
-    public void update(float dt){
+
+    public void handleInput(float dt) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+            player.body.applyLinearImpulse(new Vector2(0, 4f), player.body.getWorldCenter(), true);
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) && (player.body.getLinearVelocity().x <= 2)) {
+            player.body.applyLinearImpulse(new Vector2(0.2f, 0), player.body.getWorldCenter(), true);
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) && (player.body.getLinearVelocity().x >= -2)) {
+            player.body.applyLinearImpulse(new Vector2(-0.2f, 0), player.body.getWorldCenter(), true);
+        }
+    }
+
+    public void update(float dt) {
         handleInput(dt);
+
+        world.step(1 / 60f, 6, 2);
+        gameCam.position.x = player.body.getPosition().x;
         gameCam.update();
         renderer.setView(gameCam);
     }
@@ -118,7 +89,7 @@ public void handleInput(float dt){
         renderer.render();
 
         //renderiza o limite dos objetos
-        b2dr.render(world,gameCam.combined);
+        b2dr.render(world, gameCam.combined);
 
         game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
         hud.stage.draw();
@@ -146,6 +117,10 @@ public void handleInput(float dt){
 
     @Override
     public void dispose() {
-
+        map.dispose();
+        renderer.dispose();
+        world.dispose();
+        b2dr.dispose();
+        hud.dispose();
     }
 }
